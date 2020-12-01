@@ -1,0 +1,54 @@
+name: rt tests
+
+on:
+  push:
+    branches:
+    - master
+    pull_request:
+    - master
+
+jobs:
+  compile:
+    name: Compile
+    runs-on: ubuntu-20.04
+    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        bld_case: [1, 2, 3]
+
+    steps:
+    - name: Checkout codes
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: ./compile.sh ${{ matrix.bld_case }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: artifact.${{ matrix.bld_case }}
+        path: compile_${{ matrix.bld_case }}
+
+  test:
+    name: Regression tests
+    needs: [compile]
+    runs-on: ubuntu-20.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        run_case: [1, 2, 3]
+
+    steps:
+    - name: Checkout codes
+      uses: actions/checkout@v2
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: artifact.${{ matrix.run_case }}
+
+    - name: Run rt
+      run: ./run.sh ${{ matrix.run_case }}
